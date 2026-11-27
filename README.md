@@ -7,11 +7,13 @@
 - **GitHub:** https://github.com/ExJtac/cas-gantt
 - **Feature acceptance checklist:** [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md)
 
-The CAS website is a demonstration host. Use synthetic/demo information and keep exported copies. The complete specification is being verified feature by feature; the acceptance checklist, not a list of screens, records what has actually passed. Public releases may lag the development checkout.
+The CAS website is a demonstration host. Use synthetic/demo information and keep exported copies. Version 0.3 is live on the CAS demo. The acceptance checklist records implemented features, verification evidence and remaining provider-specific limits.
 
 ## Installation contents in this checkout
 
-Version 0.3 includes the complete standalone implementation and installation tooling described here. Public demo/source releases can lag this checkout; check the release version in package.json and API health. See [verification](docs/VERIFICATION.md) for the latest local acceptance and [deployment record](docs/DEPLOYMENT.md) for what is actually live.
+Version 0.3 includes the standalone implementation and installation tooling described here. The release passed 87 automated tests, GitHub CI, browser checks and live server acceptance. See [verification](docs/VERIFICATION.md) and the [deployment record](docs/DEPLOYMENT.md) for evidence and limits.
+
+**First time using a Gantt chart?** Open **Quick guide** in the app. Start a project, click a task, enter its start and duration, then choose **Review changes → Apply changes**. Advanced options stay collapsed until you need them.
 
 Jump to [browser-only setup](#quick-start-browser-only), [full Docker setup](#full-local-demo-copy-these-commands), [backup instructions](#back-up-the-database-and-files), or the [GPT / Grok / Claude prompts](#install-cas-gantt-with-gpt-grok-or-claude).
 

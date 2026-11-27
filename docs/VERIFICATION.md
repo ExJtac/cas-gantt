@@ -1,5 +1,11 @@
 # Verification
 
+## v0.3 hosted acceptance — November 27, 2026 UTC
+
+The CAS promotion page, frontend and API now serve v0.3. The [release CI](https://github.com/ExJtac/cas-gantt/actions/runs/45957090494) passed all checks on PostgreSQL 16. The full HTTP smoke workflow below was repeated on HTTPS with only a synthetic account/project; all checks passed. The public browser also completed username/password sign-in and downloaded a queued PDF. At a 390px viewport the document width was 388px (no document overflow); navigation and Quick guide were accessible. Desktop toolbar spacing and task dates were visually reviewed. A fresh live database+file backup restored successfully with matching attachment bytes. See [deployment details](DEPLOYMENT.md) for source, release directories and rollback limits.
+
+Raw evidence remains ignored: live-release-smoke.log, v030-stage.log, v030-activate.log, v030-backup-restore.log, v030-live-headers.log and live-release-report files. Synthetic account credentials are private and untracked.
+
 ## v0.3 release review — November 27, 2026
 
 - 87 tests passed with real PostgreSQL, zero failed/skipped; TypeScript and production build passed. Six added regressions cover copied approvals/actuals, template baseline references, local approval invalidation, inherited material gates, procurement preview/apply rescheduling and inherited-hold authorization.
