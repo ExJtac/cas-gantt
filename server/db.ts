@@ -1,6 +1,7 @@
+import {createHash} from 'node:crypto';
 import pg, {type PoolClient} from 'pg';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
 export type Database = pg.Pool;
 export function database(url:string){return new pg.Pool({connectionString:url,max:10,connectionTimeoutMillis:5000,statement_timeout:15000});}
 export async function transaction<T>(pool:Database,fn:(client:PoolClient)=>Promise<T>):Promise<T>{const c=await pool.connect();try{await c.query('BEGIN');const result=await fn(c);await c.query('COMMIT');return result;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
-export async function migrate(pool:Database){await transaction(pool,async c=>{await c.query("SELECT pg_advisory_xact_lock(728301)");await c.query(await readFile(new URL('./migrations/001_workspace.sql',import.meta.url),'utf8'));});}
+export async function migrate(pool:Database){await transaction(pool,async c=>{await c.query("SELECT pg_advisory_xact_lock(728301)");await c.query('CREATE TABLE IF NOT EXISTS gantt_migrations(name text PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())');for(const file of (await readdir(new URL('./migrations/',import.meta.url))).filter(f=>/^\d+.*\.sql$/.test(f)).sort()){const sql=await readFile(new URL('./migrations/'+file,import.meta.url),'utf8'),hash=createHash('sha256').update(sql).digest('hex');const applied=await c.query('SELECT checksum FROM gantt_migrations WHERE name=$1',[file]);if(applied.rowCount){if(applied.rows[0].checksum!==hash)throw new Error('Applied migration changed: '+file);continue;}await c.query(sql);await c.query('INSERT INTO gantt_migrations(name,checksum) VALUES($1,$2)',[file,hash]);}});}

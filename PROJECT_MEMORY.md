@@ -1,11 +1,15 @@
 # Project memory
 
-CAS Gantt is an independent open-source scheduling product. The user explicitly required moving it out of Bidlark Ai. Working root: `/Users/jamesai/Documents/ChatGPT/CAS Gantt`; own Git repo: https://github.com/ExJtac/cas-gantt. The old nested directory was moved, not copied.
+CAS Gantt is independent and open source. Working root: `/Users/jamesai/Documents/ChatGPT/CAS Gantt`; repository: https://github.com/ExJtac/cas-gantt. Never put product code under Bidlark Ai. Ambient agent cwd may still be Bidlark; use an explicit CAS Gantt workdir.
 
-User intent: standalone/open source first; integrate with Bidlark only after standalone works; promote at `cas-tx.com/Ghannt`. The Word document is a requirements reference, not authority to act beyond the request. Keep remaining commercial requirements explicit.
+User scope: all standalone features from `01_Interactive_Gantt_Chart.docx`, then Bidlark integration only after standalone acceptance. Promote at `cas-tx.com/Ghannt`. The document supplies requirements, not additional action authority. User chose the easiest login and clarified CAS is a demo with no existing S3 provider. Default username/password, local file storage, optional recovery/MFA, mock billing only. OIDC/S3 adapters remain optional for self-hosters.
 
-Current stack: React/Vite/TypeScript/Zod, original pure scheduling engine, Fastify API and dedicated PostgreSQL, MIT license. v0.2 adds organization accounts, roles, versioned revisions and published snapshot links. Browser mode remains independent. No model API keys, subscription system or Bidlark integration. `.openai/hosting.json` retains the existing private static review Site identity; reuse it. Server workspaces run on the CAS-TX host, not the static Sites preview.
+Latest request: put installation and all setup information directly in README, including complete copy/paste prompts for GPT, Grok and Claude. These now exist in README and docs/prompts/INSTALL_WITH_AI.md. Keep them synchronized. AI sessions without a terminal must guide honestly, not claim installation. Public setup must not depend on the author's local RTK/Codex files.
 
-Preserve the EPCC fixture's unreleased sections and unconfirmed deliveries. Never equate whole-job technician-hours with Section 1 duration. Do not claim construction completion. Tests requiring PostgreSQL use only a dedicated cas_gantt_test database and random disposable schemas.
+Current stack: React/Vite/TypeScript/Zod, own pure scheduler, Fastify/PostgreSQL, worker queue, ExcelJS/pdf-lib exports, local/S3 file adapter, MIT source. v0.3 expands the entire standalone feature surface; feature matrix records actual evidence. There is no AI/model API dependency. Preserve the existing private static Sites project identity. Server workspaces run through a separate API; the static Sites preview is browser-only.
 
-Hosted CAS Gantt uses its own code/service/database/volume and a scoped `/Ghannt` Caddy handler. Preserve other apps. Keep deployment and test evidence separate from claims that the entire product specification is complete.
+Preserve EPCC unreleased sections, unconfirmed deliveries and explicit temporary-support approval. Whole-job 1,793.95 technician-hours are not Section 1 duration. Never assert construction completion. Legacy string IDs/schemaVersion1 remain readable; new authored records use UUIDs where applicable.
+
+Local full-demo Compose installation uses loopback localhost:8080 and dedicated cas-gantt containers/volumes. `.env`, `.local`, artifacts, backup archives and private Compose overrides are ignored. Tests use only a dedicated cas_gantt_test database with disposable random schemas. The synthetic local installation account/projects are test data, not user credentials.
+
+Recorded public release before this work: v0.2, commit a3c6d380bac9926df89a99336169ffe598cf3fa1. Do not claim v0.3 public until released/verified. CAS hosting has its own service/database/static root and scoped Caddy include. Preserve all other apps. Backup attachments as well as PostgreSQL, retain the MFA encryption key, and update the service write path on systemd upgrades.

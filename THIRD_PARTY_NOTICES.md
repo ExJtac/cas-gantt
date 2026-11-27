@@ -18,3 +18,7 @@ Development tools include Vite (MIT), TypeScript (Apache-2.0), tsx (MIT), esbuil
 - pg 8.23.1: MIT. See its installed LICENSE and repository metadata.
 
 - tsx 4.23.15: MIT. See its installed LICENSE and repository metadata.
+
+Additional standalone modules use ExcelJS (MIT), pdf-lib (MIT), @pdf-lib/fontkit (MIT), AWS SDK for JavaScript v3 (Apache-2.0), openid-client (MIT) and OTPAuth (MIT). Exact versions and transitive dependencies are recorded in package-lock.json; preserve their installed LICENSE files when distributing binaries.
+
+The bundled PDF font is Noto Sans Regular, licensed under the SIL Open Font License 1.1. Its copyright and full license are included in [packages/reporting/assets/OFL.txt](packages/reporting/assets/OFL.txt). PDF exports embed a subset of that font.

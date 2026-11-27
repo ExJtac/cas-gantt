@@ -1,11 +1,11 @@
 # Implementation status
 
-Version 0.2.0 — standalone early release, November 26, 2026.
+v0.3.0 standalone candidate — November 26, 2026.
 
-Implemented: local project/task editor; grid/timeline; workdays/holidays; task holds; five-section demo; four dependency types/lag; cycle validation; move/resize with preview; date baselines; session undo/redo; resources summary; JSON import/export; CSV export; print; responsive UI.
+The local checkout now implements the document's standalone planning scope: WBS, configurable virtual grid/timeline, minute/shift calendars, constraints/manual scheduling, CPM/float, actuals/baselines, resources/materials, scenarios, templates, mapped XLSX/CSV, paginated PDF, collaboration/files/mentions, procurement permissions, queued previews/exports, recovery/MFA, optional OIDC/S3 adapters, mock entitlements and portable installation.
 
-New in v0.2: PostgreSQL migrations/persistence, username/password sessions, organization memberships and owner/scheduler/editor/viewer authorization, atomic project versions, idempotent writes, field-level revision history/restore preview, explicit published snapshots, expiring/revocable read-only links and one-use invitations. Optional browser workspace remains available and never uploads automatically.
+The README contains full installation, configuration, backups, recovery, update/troubleshooting instructions and complete GPT/Codex, Grok and Claude prompts. Default login is username/password, default file storage is local, and demo billing cannot charge money. No model API key is required.
 
-Verification includes real PostgreSQL tests for tenant isolation, permissions, CSRF/origin checks, stale/concurrent writes, baseline preservation, publishing, expiry/revocation, restart persistence and session invalidation; browser checks cover sign-in, save/reload, publishing, revocation, history and conflict recovery. See docs/VERIFICATION.md.
+Local verification: 81 passing tests with real PostgreSQL, successful production build, zero known dependency audit findings, Docker installation and health, 1,000-task browser render/filter/edit/reload, queued browser PDF download, visually inspected PDF, and separate database+attachment restore. See docs/VERIFICATION.md and docs/FEATURE_MATRIX.md for evidence and coverage limits.
 
-Original specification gates: G0 standalone architecture established; G1 persistence/accounts substantially implemented, with OIDC/recovery and broader operational review pending; G2 dependency core implemented but WBS, actuals, detailed calendars/constraints and CPM incomplete; G3 baseline/revision/publication subset implemented. G4 Bidlark integration and G5 full commercial readiness remain incomplete. This is not the full commercial specification.
+Release state: v0.2 remains the last recorded public CAS/GitHub deployment until the v0.3 release is explicitly recorded in deployment evidence. Local implementation is not proof of a public deployment. OIDC/S3 are optional configured adapters, not connected live providers. Broader device/accessibility review and production operations remain acceptance gates. Bidlark integration and live payments are deferred.

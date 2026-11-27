@@ -1,0 +1,3 @@
+import type {PoolClient} from 'pg';import {HttpError} from './security';
+export async function entitlement(c:PoolClient,org:string,feature:'exports'|'attachments'|'scenarios'){const r=await c.query('SELECT features FROM gantt_entitlements WHERE organization_id=$1',[org]);if(r.rowCount&&r.rows[0].features[feature]===false)throw new HttpError(403,'This workspace plan does not enable '+feature+'.','entitlement_required');}
+export async function projectLimit(c:PoolClient,org:string){const r=await c.query('SELECT features FROM gantt_entitlements WHERE organization_id=$1',[org]);return Number(r.rows[0]?.features.projects||100);}

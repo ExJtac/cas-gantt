@@ -1,83 +1,32 @@
-/** Pure calendar-date scheduling. No UI, storage, host timezone or network dependency. */
-export type Relation = 'FS' | 'SS' | 'FF' | 'SF';
-export type Calendar = { workdays: number[]; holidays: string[] };
-export type Dependency = { taskId: string; relation: Relation; lag: number };
-export const statuses = ['Not Started','In Progress','Completed','On Hold','Awaiting Approval','Behind Schedule','On Schedule','Ahead of Schedule'] as const;
-export type Status = typeof statuses[number];
-export type Task = { id: string; title: string; section: string; owner: string; start: string | null; duration: number; progress: number; status: Status; dependencies: Dependency[]; hold: string; notes: string; hours: number; milestone: boolean };
-export type Section = { id: string; name: string; released: boolean };
-export type Schedule = { tasks: Task[]; sections: Section[]; calendar: Calendar };
-export type ScheduledTask = Task & { finish: string | null; blocked: string | null };
-const DAY = 86400000;
-export function validDate(s: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s) || s < '1900-01-01' || s > '2199-12-31') return false;
-  const d = new Date(s + 'T00:00:00Z');
-  return Number.isFinite(d.valueOf()) && d.toISOString().slice(0,10) === s;
+/** Deterministic civil-date/minute engine. No UI, storage, network or host-zone dependency. */
+import type {Task,Calendar,Schedule,ScheduledTask,Dependency} from './types';
+import {at,dateAt,minuteAt,intervals,dayMinutes,snap,addMinutes,workBetween,validDate,shiftWork} from './calendar';
+export * from './types';export * from './calendar';
+export function finishOf(t:Pick<Task,'start'|'duration'|'milestone'>,c:Calendar):string|null{if(!Number.isInteger(t.duration)||t.duration<0||t.duration>3650)return null;return t.start?shiftWork(t.start,t.milestone?0:Math.max(0,t.duration-1),c):null;}
+export function orderTasks(tasks:Task[]):Task[]{const byId=new Map(tasks.map(t=>[t.id,t]));if(byId.size!==tasks.length)throw new Error('Task IDs must be unique.');const indegree=new Map(tasks.map(t=>[t.id,t.dependencies.length]));const children=new Map<string,string[]>();for(const t of tasks)for(const d of t.dependencies){if(!byId.has(d.taskId))throw new Error(`Missing predecessor for ${t.title}.`);if(d.taskId===t.id)throw new Error(`${t.title} cannot depend on itself.`);if(byId.get(d.taskId)?.kind==='summary'||t.kind==='summary')throw new Error('Link leaf tasks or milestones, not WBS summaries.');children.set(d.taskId,[...(children.get(d.taskId)||[]),t.id]);}const q=tasks.filter(t=>!indegree.get(t.id)),out:Task[]=[];for(let i=0;i<q.length;i++){const t=q[i];out.push(t);for(const id of children.get(t.id)||[]){indegree.set(id,indegree.get(id)!-1);if(!indegree.get(id))q.push(byId.get(id)!);}}if(out.length!==tasks.length)throw new Error('Dependency cycle detected. Remove a link between: '+tasks.filter(t=>indegree.get(t.id)!>0).map(t=>t.title).join(', '));return out;}
+export function hierarchy(tasks:Task[]){const byId=new Map(tasks.map(t=>[t.id,t])),children=new Map<string|null,Task[]>();for(const t of tasks){let cur=t,seen=new Set([t.id]);for(let depth=0;cur.parentId;depth++){const parent=byId.get(cur.parentId);if(!parent)throw new Error(`Missing WBS parent for ${t.title}.`);if(parent.kind!=='summary')throw new Error('WBS parents must be summary tasks.');if(seen.has(parent.id)||depth>=49)throw new Error('WBS cycle or depth greater than 50.');seen.add(parent.id);cur=parent;}const key=t.parentId||null;children.set(key,[...(children.get(key)||[]),t]);}const result:{task:Task;depth:number;wbs:string}[]=[];function walk(parent:string|null,prefix:string,depth:number){(children.get(parent)||[]).forEach((t,i)=>{const wbs=prefix?prefix+'.'+(i+1):String(i+1);result.push({task:t,depth,wbs});walk(t.id,wbs,depth+1);});}walk(null,'',0);return result;}
+export function taskCalendar(t:Task,s:Schedule){return s.calendars?.find(c=>c.id===t.calendarId)||s.calendar;}
+function duration(t:Task,c:Calendar){if(t.milestone||t.kind==='milestone')return 0;if(t.workType==='effort'){const units=t.assignments?.reduce((n,a)=>n+a.units,0)||1;return Math.max(1,Math.ceil(t.hours*60/units));}return t.durationMinutes??t.duration*dayMinutes(c);}
+const lagMinutes=(d:Dependency,c:Calendar)=>Math.round(d.lag*(d.unit==='minutes'?1:d.unit==='hours'?60:dayMinutes(c)));
+const edgeLag=(d:Dependency,c:Calendar,p:Task,t:Task)=>lagMinutes(d,c)+(d.relation==='SF'&&t.durationMinutes===undefined&&p.durationMinutes===undefined&&(!d.unit||d.unit==='days')?dayMinutes(c):0);
+export function calculate(s:Schedule):{tasks:ScheduledTask[];warnings:string[];projectFinish:string|null;metadata:{algorithm:string;floatUnit:string;caveats:string[]}}{
+ if(!s.calendar.workdays.length)throw new Error('Select at least one working day.');const tree=hierarchy(s.tasks),ordered=orderTasks(s.tasks),result=new Map<string,ScheduledTask>(),warnings:string[]=[];const calendars=[s.calendar,...s.calendars||[]];for(const c of calendars){if(!c.workdays.length||dayMinutes(c)<=0)throw new Error('Calendar must contain working shifts.');for(const shifts of [c.shifts,...c.exceptions?.map(e=>e.shifts)||[]])if(shifts){let end=-1;for(const span of shifts){if(!Number.isInteger(span.start)||!Number.isInteger(span.end)||span.start<0||span.end>1440||span.start>=span.end||span.start<end)throw new Error('Calendar shifts must be ordered, non-overlapping minutes within one day.');end=span.end;}}}
+ for(const t of ordered){const c=taskCalendar(t,s),dm=duration(t,c);if(t.start&&!validDate(t.start))throw new Error(`Invalid start date for ${t.title}.`);if(!Number.isInteger(t.duration)||t.duration<0||t.duration>3650||(!t.milestone&&t.kind!=='summary'&&t.kind!=='milestone'&&t.duration<1))throw new Error('Task duration must be 1–3650 workdays (0 for milestones).');if(!Number.isInteger(dm)||dm<0||dm>6000000)throw new Error('Invalid working-minute duration.');const section=s.sections.find(x=>x.id===t.section);if(!section)throw new Error(`Unknown section for ${t.title}.`);let sectionBlocked=!section.released,ancestor=section;const seen=new Set([ancestor.id]);while(ancestor.parentId){const parent=s.sections.find(x=>x.id===ancestor.parentId);if(!parent||seen.has(parent.id))throw new Error('Invalid section hierarchy.');seen.add(parent.id);sectionBlocked ||= !parent.released;ancestor=parent;}
+ let blocked=t.archived?'Archived':sectionBlocked?'Section awaiting release':t.hold||t.holds?.find(h=>h.state!=='approved')?.description||null;const issues:string[]=[];let ancestorTask=t;while(ancestorTask.parentId){ancestorTask=s.tasks.find(x=>x.id===ancestorTask.parentId)!;blocked ||= ancestorTask.archived?'Parent WBS archived':ancestorTask.hold||ancestorTask.holds?.find(h=>h.state!=='approved')?.description||null;}
+ for(const requirement of t.materials||[]){const m=s.materials?.find(x=>x.id===requirement.materialId);if(!m||m.state!=='ready'||m.received<s.tasks.filter(x=>!x.archived).reduce((n,x)=>n+(x.materials||[]).filter(r=>r.materialId===m.id).reduce((a,r)=>a+r.quantity,0),0))blocked ||= 'Material not ready: '+(m?.name||requirement.materialId);}
+ const requested=t.start?at(t.start,t.startMinute??(intervals(t.start,c)[0]?.start??c.shifts?.[0]?.start??480)):null;let start=requested===null?null:snap(requested,c);if(requested!==null&&requested!==start){issues.push(c.nonworkingPolicy==='preserve'?'Entered nonworking date preserved; working duration starts at next shift.':'Moved to the next working day or shift.');if(c.nonworkingPolicy==='preserve')start=requested;}
+ let lower:number|null=null;for(const dep of t.dependencies){if(!['FS','SS','FF','SF'].includes(dep.relation)||!Number.isFinite(dep.lag)||Math.abs(dep.lag)>3650)throw new Error('Invalid dependency relation or lag.');const p=result.get(dep.taskId)!;if(p.earlyStart==null||p.earlyFinish==null){blocked ||= `Waiting for ${p.title}`;continue;}const endpoint=dep.relation[0]==='F'?p.earlyFinish:p.earlyStart;let bound=addMinutes(endpoint,edgeLag(dep,c,p,t),c);if(dep.relation[1]==='F')bound=addMinutes(bound,-dm,c);else bound=snap(bound,c);lower=lower===null?bound:Math.max(lower,bound);}
+ const constraint=t.constraint;if(constraint?.type!=='none'&&constraint?.date){const first=intervals(constraint.date,c)[0]?.start??480,last=intervals(constraint.date,c).at(-1)?.end??960;const constrained=at(constraint.date,constraint.type==='mustFinish'||constraint.type==='finishNoLater'?last:first);if(constraint.type==='startNoEarlier')lower=Math.max(lower??-Infinity,constrained);if(constraint.type==='mustStart'||constraint.type==='mustFinish'){start=constraint.type==='mustStart'?constrained:addMinutes(constrained,-dm,c);if(lower!==null&&start<lower)issues.push('Hard constraint conflicts with predecessor logic.');}}
+ if(t.mode==='manual'){if(lower!==null&&start!==null&&start<lower)issues.push('Manual dates conflict with predecessor logic.');if(start===null&&lower!==null)issues.push('Manual task requires an explicit start.');}else if(!['mustStart','mustFinish'].includes(constraint?.type||'')){if(lower!==null)start=Math.max(start??-Infinity,lower);}
+ if(blocked)start=null;let finish=start===null?null:dm?addMinutes(start,dm,c):start;if(finish!==null&&constraint?.type==='finishNoLater'&&constraint.date&&dateAt(finish)>constraint.date)issues.push('Forecast exceeds Finish no later than constraint.');if(t.actualFinish&&(!t.actualStart||t.actualFinish<t.actualStart))throw new Error(`Actual finish requires an earlier actual start: ${t.title}.`);
+ if(start!==null&&(!validDate(dateAt(start))||!validDate(dateAt(finish!))))throw new Error('Calculated dates must be within 1900–2199.');const r:ScheduledTask={...t,start:start===null?null:dateAt(start),startMinute:start===null?t.startMinute:minuteAt(start),finish:finish===null?null:dateAt(finish-(minuteAt(finish)===0&&dm?1:0)),finishMinute:finish===null?undefined:minuteAt(finish),blocked,computedDurationMinutes:dm,earlyStart:start,earlyFinish:finish,totalFloatMinutes:null,freeFloatMinutes:null,critical:false,issues};result.set(t.id,r);warnings.push(...issues.map(x=>t.title+': '+x));
+ }
+ const leaves=ordered.filter(t=>t.kind!=='summary'&&!t.archived),ends=leaves.flatMap(t=>result.get(t.id)!.earlyFinish??[]);const end=ends.length?Math.max(...ends):null;const successors=new Map<string,{task:Task;dependency:Dependency}[]>();for(const task of leaves)for(const dependency of task.dependencies)successors.set(dependency.taskId,[...(successors.get(dependency.taskId)||[]),{task,dependency}]);
+ // Latest admissible starts from successor endpoint inequalities; no resource leveling.
+ if(end!==null){for(const t of [...ordered].reverse()){const r=result.get(t.id)!,c=taskCalendar(t,s);if(r.earlyStart==null||t.kind==='summary')continue;const next=(successors.get(t.id)||[]).filter(x=>result.get(x.task.id)!.earlyStart!=null);let latest=next.length?Infinity:addMinutes(end,-r.computedDurationMinutes!,c);if(t.constraint?.date&&['mustStart','mustFinish','finishNoLater'].includes(t.constraint.type)){const d=t.constraint.date;latest=Math.min(latest,t.constraint.type==='mustStart'?at(d,intervals(d,c)[0]?.start??480):addMinutes(at(d,intervals(d,c).at(-1)?.end??960),-r.computedDurationMinutes!,c));}for(const {task:successor,dependency:d} of next){const sr=result.get(successor.id)!;if(sr.lateStart==null||sr.lateFinish==null)continue;{const sc=taskCalendar(successor,s),target=d.relation[1]==='F'?sr.lateFinish:sr.lateStart;let bound=addMinutes(target,-edgeLag(d,sc,t,successor),sc);if(d.relation[0]==='F')bound=addMinutes(bound,-r.computedDurationMinutes!,c);latest=Math.min(latest,bound);}}
+ r.lateStart=latest;r.lateFinish=addMinutes(latest,r.computedDurationMinutes!,c);r.totalFloatMinutes=workBetween(r.earlyStart,latest,c);r.critical=r.totalFloatMinutes<=0;
+ let free=next.length?Infinity:workBetween(r.earlyFinish!,end,c);for(const {task:successor,dependency:d} of next){const sr=result.get(successor.id)!;if(sr.earlyStart==null||sr.earlyFinish==null)continue;{const sc=taskCalendar(successor,s),target=d.relation[1]==='F'?sr.earlyFinish:sr.earlyStart,endpoint=d.relation[0]==='F'?r.earlyFinish!:r.earlyStart;free=Math.min(free,workBetween(addMinutes(endpoint,edgeLag(d,sc,t,successor),sc),target,sc));}}r.freeFloatMinutes=Math.max(0,free);}}
+ for(const {task:t,wbs,depth} of [...tree].reverse()){const r=result.get(t.id)!;r.wbs=wbs;r.depth=depth;if(t.kind==='summary'){const children=s.tasks.filter(x=>x.parentId===t.id&&!x.archived).map(x=>result.get(x.id)!);const starts=children.flatMap(x=>x.earlyStart??[]),finishes=children.flatMap(x=>x.earlyFinish??[]);r.earlyStart=starts.length?Math.min(...starts):null;r.earlyFinish=finishes.length?Math.max(...finishes):null;r.start=r.earlyStart===null?null:dateAt(r.earlyStart);r.finish=r.earlyFinish===null?null:dateAt(r.earlyFinish);r.progress=children.length?Math.round(children.reduce((n,x)=>n+x.progress*(x.hours||1),0)/children.reduce((n,x)=>n+(x.hours||1),0)):0;r.hours=children.reduce((n,x)=>n+x.hours,0);r.critical=children.some(x=>x.critical);r.blocked=children.some(x=>x.blocked)?'Contains blocked work':null;}}
+ return {tasks:s.tasks.map(t=>result.get(t.id)!),warnings,projectFinish:end===null?null:dateAt(end),metadata:{algorithm:'civil-minute-cpm-v1',floatUnit:'working minutes in task calendar',caveats:['Logic-based CPM; resources are not leveled.','Manual dates and hard constraints can create infeasible logic; review warnings.','Working-day lag uses the successor calendar nominal daily shift minutes.','Unscheduled/held tasks are excluded from float; summary bars roll up children.']}};
 }
-export function addDays(s: string, n: number): string {
-  return new Date(new Date(s + 'T00:00:00Z').valueOf() + n * DAY).toISOString().slice(0,10);
-}
-export function diffDays(a: string, b: string): number { return Math.round((Date.parse(a+'T00:00:00Z')-Date.parse(b+'T00:00:00Z'))/DAY); }
-export function isWorking(s: string, c: Calendar): boolean { return c.workdays.includes(new Date(s+'T00:00:00Z').getUTCDay()) && !c.holidays.includes(s); }
-export function workday(s: string, c: Calendar, direction = 1): string {
-  for (let i=0;i<3700;i++,s=addDays(s,direction)) if (isWorking(s,c)) return s;
-  throw new Error('Calendar has no available working day.');
-}
-export function shiftWork(s: string, n: number, c: Calendar): string {
-  if(!Number.isInteger(n)||Math.abs(n)>10000)throw new Error("Workday offsets must be whole days within supported bounds.");
-  let result=workday(s,c,n<0?-1:1);
-  for(let i=0;i<Math.abs(n);i++) result=workday(addDays(result,n<0?-1:1),c,n<0?-1:1);
-  return result;
-}
-export function finishOf(t: Pick<Task,'start'|'duration'|'milestone'>, c: Calendar): string|null { if(!Number.isInteger(t.duration)||t.duration<0||t.duration>3650)return null; return t.start ? shiftWork(t.start,t.milestone?0:Math.max(0,t.duration-1),c):null; }
-export function orderTasks(tasks: Task[]): Task[] {
-  const byId = new Map(tasks.map(t=>[t.id,t]));
-  if(byId.size !== tasks.length) throw new Error('Task IDs must be unique.');
-  const indegree=new Map(tasks.map(t=>[t.id,t.dependencies.length]));
-  const children=new Map<string,string[]>();
-  for(const t of tasks) for(const d of t.dependencies) {
-    if(!byId.has(d.taskId)) throw new Error(`Missing predecessor for ${t.title}.`);
-    if(d.taskId===t.id) throw new Error(`${t.title} cannot depend on itself.`);
-    children.set(d.taskId,[...(children.get(d.taskId)||[]),t.id]);
-  }
-  const queue=tasks.filter(t=>!indegree.get(t.id)); const ordered:Task[]=[];
-  for(let i=0;i<queue.length;i++) { const t=queue[i];ordered.push(t);for(const id of children.get(t.id)||[]) {indegree.set(id,indegree.get(id)!-1);if(!indegree.get(id))queue.push(byId.get(id)!);} }
-  if(ordered.length!==tasks.length)throw new Error('Dependency cycle detected. Remove a link between: '+tasks.filter(t=>indegree.get(t.id)!>0).map(t=>t.title).join(', '));
-  return ordered;
-}
-export function calculate(s: Schedule): { tasks: ScheduledTask[]; warnings: string[] } {
-  if(!s.calendar.workdays.length)throw new Error('Select at least one working day.');
-  const result = new Map<string,ScheduledTask>(); const warnings:string[]=[];
-  for(const t of orderTasks(s.tasks)) {
-    if(t.start && !validDate(t.start))throw new Error(`Invalid start date for ${t.title}.`);
-    if(!Number.isInteger(t.duration)||t.duration<0||t.duration>3650||(!t.milestone && t.duration<1))throw new Error('Task duration must be 1–3650 workdays (0 for milestones).');
-    const section = s.sections.find(x=>x.id===t.section);
-    if(!section)throw new Error(`Unknown section for ${t.title}.`);
-    let blocked = !section.released ? 'Section awaiting release' : t.hold || null;
-    let start = t.start ? workday(t.start,s.calendar):null;
-    if(start!==t.start)warnings.push(`${t.title}: moved to the next working day.`);
-    for(const dep of t.dependencies) {
-      if(!['FS','SS','FF','SF'].includes(dep.relation)||!Number.isInteger(dep.lag)||Math.abs(dep.lag)>3650)throw new Error('Invalid dependency relation or lag.');
-      const p=result.get(dep.taskId)!;
-      if(!p.start||!p.finish) {blocked=blocked||`Waiting for ${p.title}`;continue;}
-      let lower:string;
-      if(dep.relation==='FS')lower=shiftWork(p.finish,dep.lag+(p.milestone?0:1),s.calendar);
-      else if(dep.relation==='SS')lower=shiftWork(p.start,dep.lag,s.calendar);
-      else lower=shiftWork(dep.relation==='FF'?p.finish:p.start,dep.lag-(t.milestone?0:t.duration-1),s.calendar);
-      if(!start||lower>start) start=lower;
-    }
-    if(blocked)start=null;
-    if(start && !validDate(start))throw new Error('Calculated dates must be within 1900–2199.');
-    const scheduled={...t,start,finish:finishOf({...t,start},s.calendar),blocked};
-    if(scheduled.finish&&!validDate(scheduled.finish))throw new Error('Calculated finish is outside supported years.');
-    result.set(t.id,scheduled);
-  }
-  return {tasks:s.tasks.map(t=>result.get(t.id)!),warnings};
-}
-export function materialize(s:Schedule):Task[] {return calculate(s).tasks.map(({finish: _f,blocked:_b,...t})=>t);}
-
-export function resizedDuration(start:string,finish:string,calendar:Calendar):number {
-  if(finish<start)return 1;let count=0;
-  for(let d=start;d<=finish;d=addDays(d,1)){if(isWorking(d,calendar))count++;if(count>3650)throw new Error('Duration exceeds 3650 workdays.');}
-  return Math.max(1,count);
-}
+export function materialize(s:Schedule):Task[]{const map=new Map(calculate(s).tasks.map(t=>[t.id,t]));return s.tasks.map(t=>{const r=map.get(t.id)!;return t.kind==='summary'?t:{...t,start:r.start,...(t.startMinute!==undefined||t.durationMinutes!==undefined?{startMinute:r.startMinute}:{} )};});}

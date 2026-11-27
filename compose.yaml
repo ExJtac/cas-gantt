@@ -1,0 +1,54 @@
+name: cas-gantt
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cas_gantt
+      POSTGRES_DB: cas_gantt
+      POSTGRES_PASSWORD: ${CAS_DB_PASSWORD:?Run npm run setup first}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U cas_gantt -d cas_gantt']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      GANTT_DATABASE_URL: postgres://cas_gantt:${CAS_DB_PASSWORD}@db:5432/cas_gantt
+      GANTT_HOST: 0.0.0.0
+      GANTT_PORT: 4318
+      GANTT_PUBLIC_ORIGIN: ${GANTT_PUBLIC_ORIGIN:-http://localhost:8080}
+      GANTT_ENCRYPTION_KEY: ${GANTT_ENCRYPTION_KEY:?Run npm run setup first}
+      GANTT_FILE_DIRECTORY: /data/attachments
+      GANTT_REGISTRATION: ${GANTT_REGISTRATION:-enabled}
+      GANTT_MOCK_BILLING: ${GANTT_MOCK_BILLING:-enabled}
+      NODE_ENV: ${NODE_ENV:-development}
+    volumes:
+      - attachment_data:/data/attachments
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://127.0.0.1:4318/api/v1/health").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - '${CAS_BIND_ADDRESS:-127.0.0.1}:${CAS_HTTP_PORT:-8080}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  attachment_data:

@@ -11,3 +11,7 @@ Rollback: restore the three backed-up files and reload Caddy. This restores prev
 ## v0.2 server release
 
 The initial static registration above is historical. Do not rerun `prepare-public.mjs` over an existing handler. See `docs/SELF_HOSTING.md` and `docs/DEPLOYMENT.md` for the server layout. `install-server.sh` is a first-install procedure that refuses existing credentials/container/ports; new releases preserve the dedicated database, install new immutable code/static paths, and update the Gantt include/code symlink only. The supplied service and backup units are scoped to CAS Gantt.
+
+## v0.3 upgrade preparation
+
+The new service needs a persistent writable attachment path. Create `/var/lib/cas-gantt/attachments` owned by cas-gantt, set GANTT_FILE_DIRECTORY, retain or generate GANTT_ENCRYPTION_KEY exactly once, and install the updated service's ReadWritePaths setting. The backup job now pauses only cas-gantt-api and copies both its database and file directory. Keep environment/encryption secrets in a separate encrypted backup. Never replace existing database credentials during an upgrade. Local Docker installation uses README and compose.yaml; the CAS host installer is not a general installer.

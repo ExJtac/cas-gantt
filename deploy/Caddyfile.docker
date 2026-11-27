@@ -1,0 +1,13 @@
+:80 {
+  handle /Ghannt/api/* {
+    uri strip_prefix /Ghannt
+    reverse_proxy api:4318
+  }
+  handle {
+    root * /srv
+    header X-Content-Type-Options nosniff
+    header X-Frame-Options SAMEORIGIN
+    header Referrer-Policy no-referrer
+    file_server
+  }
+}

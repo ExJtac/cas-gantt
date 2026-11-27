@@ -7,3 +7,8 @@ dist/
 artifacts/
 
 .local/
+
+# Private operational files
+backups/
+compose.override.yaml
+compose.override.yml

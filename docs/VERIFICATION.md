@@ -1,5 +1,24 @@
 # Verification
 
+## v0.3 local standalone acceptance — November 26, 2026
+
+Environment: Apple M1 Pro, 16 GB RAM, macOS arm64, Node 22.22.2; in-app Chromium browser; Docker 29.5.2 and standalone Compose 5.3.0. Database suites use isolated schemas in a dedicated PostgreSQL 14 test database. The portable installation and restore use PostgreSQL 16 in Docker.
+
+- **81 tests passed, zero failed/skipped** with GANTT_TEST_DATABASE_URL set. The original scheduling/security suites plus advanced tests cover minute/shift calendars, exceptions, hard/manual constraints, CPM, WBS, holds/material totals, splits/scenarios/templates, CSV/XLSX, PDF pagination, worker determinism, database projections/FKs, comments/files/templates, procurement, queued reports, baseline/viewport APIs, approval invalidation, role-downgraded job access and MFA/recovery. Invalid hierarchy/blackout/resource references are rejected.
+- **Build passed:** TypeScript and production Vite. Large export/font libraries are loaded on demand; Vite reports a chunk-size warning. It is not a failed build. Dependency audit at this revision's dependency set reports **zero known vulnerabilities**; this is not an independent security assessment.
+- **Documented installation exercised:** npm setup generated private secrets, a second setup preserved them byte-for-byte, Docker built/started three dedicated services, database/API became healthy, and the browser loaded the app at localhost:8080/Ghannt/app/. A synthetic account and projects persisted through container rebuilds.
+- **Browser end-to-end:** simple sign-in, 1,000-task load, search, keyboard Enter inspector, progress edit, async preview, explicit apply, reload with the saved 25% value, template wizard with five sections, Reports and queued PDF download, settings navigation. Unit tests separately verify the corrected Awaiting Approval status for new template placeholders.
+- **Measured browser check:** 1,000 tasks spanning November 2026–February 2027; 24 rows mounted, filtering to task 1000 took about **31 ms** elapsed in CDP metrics, with **5.2 ms script time** and **23 ms total task time**. API creation of the fixture took **769 ms**. These are single-run observations on this machine, not universal performance guarantees. The 1,000-node chained engine benchmark took about 59 ms for two calculations in the expanded engine.
+- **PDF inspection:** generated the EPCC synthetic schedule, rendered with Poppler and inspected the page. Fixed column-heading alignment, added week-axis labels and forecast finish/actual lines. Verified the multiplication/dimension glyphs and no row overlap. Separate test confirms a multi-page export.
+- **Responsive/keyboard review:** 390px viewport showed a mobile navigation regression caused by old positional CSS hiding Schedule. Fixed it with a horizontally scrollable, labeled navigation bar. Settings and Schedule then remained accessible, with document width equal to viewport width (375px content after scrollbar). Inspector inputs remain the non-drag editing path. Status text chooses a contrasting black/white foreground; muted text contrast was increased. This is WCAG-minded implementation, not a full WCAG certification.
+- **Backup recovery:** stopped this demo's web ingress, dumped PostgreSQL and archived attachments, restarted ingress, restored into separate cas_gantt_restore_check. Verified **3 projects, 1,020 tasks and 1 attachment**, recovered the synthetic attachment contents, and removed only the disposable restore database. No live database was overwritten.
+
+Raw local evidence is in ignored artifacts/full-tests.log, full-build.log, full-audit.json, full-compose.log, backup-check.log, install-qa.json and report-acceptance.pdf/png. Dumps and private environment files must stay untracked. Reproduce with the README commands. The public deployment record is separate; local success does not claim a new hosted release.
+
+External OIDC/S3 configurations remain operator-specific acceptance, since the CAS demo uses neither. Production billing, Bidlark integration, independent security review and exhaustive browser/assistive-technology coverage are not claimed.
+
+## Historical verification
+
 Environment: Node v22.22.2, macOS arm64. November 26, 2026.
 
 Automated checks: 20 passing tests covering valid local dates and DST arithmetic; inclusive working duration; FS/SS/FF/SF, negative lag and holiday/weekend boundaries; milestone behavior; dependency cycles/missing links/duplicate IDs; section/material holds and successor propagation; EPCC placeholder sections; baseline/status invariants; JSON roundtrip/schema rejection; CSV formula neutralization; input bounds. A deterministic 1,000-task dependency chain completed two calculations in about 14 ms in the first recorded run. This is an engine benchmark, not a browser performance claim.

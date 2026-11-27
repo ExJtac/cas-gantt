@@ -12,12 +12,13 @@ if ss -ltn | grep -Eq ':(4318|5436)[[:space:]]'; then echo 'CAS Gantt ports are 
 if docker container inspect cas-gantt-db >/dev/null 2>&1; then echo 'CAS Gantt database already exists.' >&2; exit 1; fi
 id cas-gantt >/dev/null 2>&1 || useradd --system --home-dir /nonexistent --shell /usr/sbin/nologin cas-gantt
 install -d -m 700 /etc/cas-gantt /var/backups/cas-gantt
+install -d -m 700 -o cas-gantt -g cas-gantt /var/lib/cas-gantt /var/lib/cas-gantt/attachments
 python3 - <<'PY'
 import secrets, pathlib, os
 secret=secrets.token_hex(32)
 files={
  'database.env':f'POSTGRES_USER=cas_gantt\nPOSTGRES_DB=cas_gantt\nPOSTGRES_PASSWORD={secret}\n',
- 'api.env':f'GANTT_DATABASE_URL=postgres://cas_gantt:{secret}@127.0.0.1:5436/cas_gantt\nGANTT_PUBLIC_ORIGIN=https://cas-tx.com\nGANTT_PORT=4318\nGANTT_REGISTRATION=enabled\nNODE_ENV=production\n'}
+ 'api.env':f'GANTT_DATABASE_URL=postgres://cas_gantt:{secret}@127.0.0.1:5436/cas_gantt\nGANTT_PUBLIC_ORIGIN=https://cas-tx.com\nGANTT_PORT=4318\nGANTT_REGISTRATION=enabled\nGANTT_FILE_DIRECTORY=/var/lib/cas-gantt/attachments\nGANTT_ENCRYPTION_KEY={secrets.token_hex(32)}\nGANTT_MOCK_BILLING=enabled\nGANTT_LOG_REQUESTS=enabled\nNODE_ENV=production\n'}
 for name,data in files.items():
  p=pathlib.Path('/etc/cas-gantt')/name
  with p.open('x') as f: f.write(data)
