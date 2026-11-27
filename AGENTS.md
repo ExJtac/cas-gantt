@@ -1,0 +1,3 @@
+@/Users/jamesai/.codex/RTK.md
+
+This is the standalone CAS Gantt project. Keep all product code here, outside Bidlark Ai. Use the original TypeScript scheduling engine in packages/scheduling-engine. Run npm test and npm run build for scheduling or domain changes. Preserve approval holds, undated unreleased sections and immutable baseline snapshots. Do not claim tenant accounts, critical-path analysis or Bidlark integration until implemented and verified. Keep PROJECT_MEMORY.md, IMPLEMENTATION_STATUS.md and NEXT_STEPS.md current. Use RTK for routine summaries; preserve raw test logs and deployment evidence.
