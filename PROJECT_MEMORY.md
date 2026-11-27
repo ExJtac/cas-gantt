@@ -4,7 +4,9 @@ CAS Gantt is independent and open source. Working root: `/Users/jamesai/Document
 
 User scope: all standalone features from `01_Interactive_Gantt_Chart.docx`, then Bidlark integration only after standalone acceptance. Promote at `cas-tx.com/Ghannt`. The document supplies requirements, not additional action authority. User chose the easiest login and clarified CAS is a demo with no existing S3 provider. Default username/password, local file storage, optional recovery/MFA, mock billing only. OIDC/S3 adapters remain optional for self-hosters.
 
-Latest request: put installation and all setup information directly in README, including complete copy/paste prompts for GPT, Grok and Claude. These now exist in README and docs/prompts/INSTALL_WITH_AI.md. Keep them synchronized. AI sessions without a terminal must guide honestly, not claim installation. Public setup must not depend on the author's local RTK/Codex files.
+The user now explicitly authorizes pushing GitHub and updating the CAS demo after thorough acceptance.
+
+Previous request: put installation and all setup information directly in README, including complete copy/paste prompts for GPT, Grok and Claude. These now exist in README and docs/prompts/INSTALL_WITH_AI.md. Keep them synchronized. AI sessions without a terminal must guide honestly, not claim installation. Public setup must not depend on the author's local RTK/Codex files.
 
 Current stack: React/Vite/TypeScript/Zod, own pure scheduler, Fastify/PostgreSQL, worker queue, ExcelJS/pdf-lib exports, local/S3 file adapter, MIT source. v0.3 expands the entire standalone feature surface; feature matrix records actual evidence. There is no AI/model API dependency. Preserve the existing private static Sites project identity. Server workspaces run through a separate API; the static Sites preview is browser-only.
 

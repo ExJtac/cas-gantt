@@ -1,5 +1,11 @@
 # Verification
 
+## v0.3 release review — November 27, 2026
+
+- 87 tests passed with real PostgreSQL, zero failed/skipped; TypeScript and production build passed. Six added regressions cover copied approvals/actuals, template baseline references, local approval invalidation, inherited material gates, procurement preview/apply rescheduling and inherited-hold authorization.
+- Browser review verified the new Quick guide and simplified task inspector: task name, start and duration → review → apply → reload, preserving November 30–December 2 dates. Advanced options are collapsed by default. Default columns now expose both start and finish; timeline labels adapt to zoom. Fixed overlapping toolbar fields observed at desktop width.
+- Full HTTP acceptance through the rebuilt Docker stack verified registration/login, project creation, dependency scheduling, preview/apply/reload, stale-write rejection, baseline capture, comments, attachment upload/download, saved template, all four queued export formats, approval/publication, share revocation and cross-tenant denial. Synthetic fixtures only. Raw logs: ignored artifacts/release-tests.log, release-build.log and local-release-smoke.log.
+
 ## v0.3 local standalone acceptance — November 26, 2026
 
 Environment: Apple M1 Pro, 16 GB RAM, macOS arm64, Node 22.22.2; in-app Chromium browser; Docker 29.5.2 and standalone Compose 5.3.0. Database suites use isolated schemas in a dedicated PostgreSQL 14 test database. The portable installation and restore use PostgreSQL 16 in Docker.
