@@ -1,64 +1,69 @@
 # CAS Gantt
 
-An open-source construction scheduling app by CAS-TX. This is a working **v0.1 standalone alpha**, with a reusable TypeScript scheduling engine and a React editor. Projects are stored in the browser; no account or backend is required.
+An independent, MIT-licensed construction scheduler by CAS-TX. **v0.2.0 is a standalone early release.** It is not connected to Bidlark.
 
-## Run locally
+- [Open the app](https://cas-tx.com/Ghannt/app/)
+- [About CAS Gantt](https://cas-tx.com/Ghannt/)
+- [Source](https://github.com/ExJtac/cas-gantt)
 
-Requires Node.js 22.12+ and npm.
+## Run the browser workspace
+
+Requires Node.js 22.12+.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:4317. To check and build:
+Open `http://127.0.0.1:4317/Ghannt/app/`. Browser mode works without an account or API. Build with `npm run build`; serve `dist/` on a static host. The private Sites preview supports browser mode only; server workspaces are available on CAS-TX or your own API host.
+
+## Run server workspaces
+
+Use your own PostgreSQL 14+ database, separate from other applications. Set `GANTT_DATABASE_URL` and `GANTT_PUBLIC_ORIGIN=http://127.0.0.1:4317` in your shell, then run `npm run dev:server` alongside Vite. Migrations run on startup under an advisory lock. The Vite proxy maps `/Ghannt/api/*` to the loopback API on port 4318.
+
+In the app, choose **Sign in → Create workspace**. Use a username and a unique password of at least 12 characters. Store it safely: self-service password recovery is not implemented. For production, follow [self-hosting](docs/SELF_HOSTING.md), use HTTPS and set `NODE_ENV=production`.
+
+Browser projects are not uploaded automatically. Export a local project as JSON, open your server workspace from your account menu, then import the file and review/apply it.
+
+## What works
+
+- Multiple projects, tasks, released/unreleased sections, holds, milestones and progress.
+- Connected grid and Gantt, drag move/resize, keyboard-accessible task fields, five timeline scales, dependency arrows, search, light/dark themes and mobile task editing.
+- FS/SS/FF/SF dependencies with whole-workday lag, holidays/weekdays, cycle and missing-link checks, and preview/apply/cancel.
+- Named immutable baseline date snapshots, comparisons, undo/redo and JSON/CSV/print exports.
+- Optional PostgreSQL workspaces with owner, scheduler, editor and published-only viewer roles; one-use expiring invitations; removal/revocation.
+- Atomic expected-version writes, idempotent retries, author-attributed server revisions with before/after fields, and previewed revision restore.
+- Explicit publishing of fixed snapshots; read-only links with expiry and revocation. Later draft changes never alter an existing publication.
+
+## Scheduling rules
+
+Tasks use local `YYYY-MM-DD` dates; history uses UTC timestamps. UTC arithmetic represents calendar dates without host/DST shifts. Start and finish are inclusive. FS+0 begins on the next workday after a task finishes; a zero-duration milestone can release successors on the same day. Nonworking starts snap forward with a warning. FF/SF derive start from duration.
+
+An entered forecast start is a lower bound. Propagation moves successors later; it does not automatically pull a dated successor earlier when a predecessor moves earlier. Clear its start to calculate from dependencies. Status does not grant approval or record actual completion. Holds and unreleased sections keep tasks and dependent work undated.
+
+Baselines preserve dates, not a full contractual baseline record. Imported baselines retain their supplied provenance; newly captured server baselines use calculated dates and server time. Undo/redo is session-scoped; server revision history persists. Local audit labels retain the latest 500 entries, while server revision records are separate and persistent.
+
+## Storage and access
+
+Browser mode stores projects under `cas-gantt.projects.v1` on this origin. Clearing browser storage removes that copy; export backups. Cross-tab checks reduce accidental overwrites but are not atomic database locks.
+
+Server mode stores project JSONB and versioned snapshots in PostgreSQL. Every organization route checks current membership and scopes queries by organization. Writes require a session, permitted role, same-origin request and CSRF token. Passwords use salted scrypt; opaque session/share/invitation tokens are hashed in the database. Production session cookies are Secure, HttpOnly and SameSite Strict. Read-only viewers receive published snapshots, never draft/history endpoints.
+
+A shared snapshot includes task notes, owners and baseline dates, but excludes draft audit entries. Anyone with an active link can read/export it. Revocation prevents future retrieval; it cannot erase copies already downloaded. Browser data stays local until an explicit import into server mode. No analytics, model calls or billing are included. Google Fonts is optional; system-font fallbacks are available.
+
+## Verification
 
 ```sh
 npm test
 npm run build
-npm run preview
 ```
 
-Serve `dist/` from any static host. Asset URLs are relative, so the editor can also be mounted under a subdirectory. `public/Ghannt/index.html` is the CAS-TX promotion page. The optional `.openai/hosting.json` is a review-site identity; remove its `project_id` before registering your own Site.
+Server acceptance tests require `GANTT_TEST_DATABASE_URL` pointing to a dedicated database named `cas_gantt_test`. Each run creates and drops its own random schema. Without that variable the database suite is explicitly skipped. CI runs the full suite against PostgreSQL 16. See [verification](docs/VERIFICATION.md).
 
-## What works
+## Remaining specification work
 
-- Create multiple projects, tasks and released/unreleased sections.
-- Connected task grid and Gantt; task drawer, drag move and resize; keyboard-accessible date and duration fields.
-- Day/week/month/quarter/year timeline scale, weekends/holiday shading, dependency arrows, milestone diamonds and progress overlays.
-- FS, SS, FF and SF dependencies, signed workday lag, cycle/missing-link rejection and impact previews with apply/cancel.
-- Explicit material/approval holds and section release gates; held tasks and their successors remain unscheduled.
-- Named baseline date snapshots, forecast comparison, local revision log, session undo/redo.
-- Project settings, workdays, holidays, IANA timezone, crew effort summaries, filtering/search and light/dark themes.
-- Browser autosave, another-tab conflict detection, JSON backup/import by project ID, CSV export and browser print/PDF task report.
-- Responsive mobile task editing (the visual timeline is hidden below 650px).
+Nested WBS, actual dates, full date constraints, explicit manual/automatic modes, work-minute calendars, CPM/float, resource capacity/leveling, XLSX/CSV mapping import, attachments/scenarios, paginated timeline PDF export and large-grid virtualization remain incomplete. OIDC, account recovery/MFA, off-host backup operations and a comprehensive accessibility/security audit are also pending. Collaboration currently reloads on demand and detects conflicts on writes; it is not live push synchronization. Billing and Bidlark integration wait for standalone acceptance.
 
-## Calendar and scheduling rules
+The EPCC demo uses Valle Verde Building A, 33 conduit stubouts, two racks and conditional CAT6A work. Durations are illustrative; deliveries/support remain unapproved, and sections 2–5 stay undated. The quoted 1,793.95 technician-hours belong to the whole job. No actual completion is asserted.
 
-Tasks use local `YYYY-MM-DD` dates, not UTC timestamps. Event history uses UTC timestamps. The pure engine uses UTC arithmetic only as a representation of calendar dates, avoiding host timezone/DST offsets. The project timezone determines today, not the task date string.
-
-Start and finish are inclusive working dates. A one-workday task starts and finishes on the same day. Nonworking starts snap forward, with a preview warning. FS+0 starts on the next workday after the predecessor finishes. A zero-duration predecessor milestone can release its successor the same day. Lags are whole workdays. FF/SF derive the successor start by its duration.
-
-Each entered forecast start is a lower bound. Propagation moves successors later as necessary; it does not automatically pull an already-dated successor earlier when its predecessor moves earlier. Clear the successor's start to recalculate from dependencies. Release holds explicitly; choosing a status does not grant approval or mark actual work complete.
-
-Baseline snapshots are append-only in the UI and retained on undo/import. They contain dates, not a full contractual baseline record. Revision history is capped at 500 local entries; undo/redo lasts only for the current browser session and project selection.
-
-## Storage and privacy
-
-Each origin has a local workspace under `cas-gantt.projects.v1`. Projects are not uploaded to a server. Clearing browser storage removes them; **export JSON backups regularly**. The app warns when storage fails and stops editing after detecting another tab's change. This is not a transactional multi-user database. Imports are capped at 5 MB and 5,000 tasks; malformed dates, links and calendars are rejected before application.
-
-Google Fonts is an optional external font request; system sans-serif fallbacks work if unavailable. No analytics, paid APIs, model calls or billing are included. Do not treat this alpha as an authenticated shared customer portal. Static hosting access logs and fonts are separate from project storage.
-
-## EPCC fixture
-
-The demonstration uses Valle Verde Building A with a requested November 4, 2026 start, 33 conduit stubouts, two racks and conditional CAT6A work. Task durations are illustrative, not confirmed construction commitments. Material arrivals and temporary support remain unapproved/unconfirmed; sections 2–5 have no dates. The 1,793.95 technician-hours refer to the whole quoted job, not Section 1. No actual completion is asserted.
-
-## Scope and next milestones
-
-This alpha does **not** implement tenant accounts, server database/API, OIDC, multi-user collaboration, sharing/permissions, billing, actual date entry, full WBS hierarchy, resource capacity/leveling, CPM/float, XLSX interchange, CSV import, attachments, scenarios or Bidlark integration. Printing produces a task report, not a paginated full timeline. A 1,000-task engine benchmark is included; large-grid virtualization and a browser performance acceptance benchmark remain future work.
-
-See [architecture](docs/ARCHITECTURE.md), [implementation status](IMPLEMENTATION_STATUS.md), [next steps](NEXT_STEPS.md) and [verification](docs/VERIFICATION.md). The standalone scheduling engine lives in `packages/scheduling-engine`; it imports no React or persistence code.
-
-## License and contributions
-
-MIT. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The chart and scheduler are original implementations; there is no proprietary Gantt dependency. Issues and pull requests are welcome. Run tests and a production build before submitting changes.
+MIT license; see [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md). The scheduling engine and chart are original implementations. [Architecture](docs/ARCHITECTURE.md), [status](IMPLEMENTATION_STATUS.md), [next steps](NEXT_STEPS.md).

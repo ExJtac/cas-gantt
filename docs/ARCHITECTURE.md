@@ -25,3 +25,13 @@ Future API seam: project-scoped schedule fetch; expected-version preview/apply; 
 ## ADR 005 — Public standalone delivery
 
 The app can be hosted on any static server. CAS-TX promotion uses the requested `/Ghannt/` spelling; public demo is `/Ghannt/app/`. A dedicated static directory and narrowly scoped Caddy handler avoid rebuilding the existing marketing website or touching product services. The private Sites review deployment is separate. Repository source is MIT; installed dependencies keep their own licenses.
+
+## ADR 006 — Server persistence and publications (v0.2 supersedes future-server notes above)
+
+The optional Fastify adapter uses PostgreSQL JSONB project records and relational users, organizations, memberships, sessions, revisions, publications, shares, invitations and security events. The same pure engine validates server preview/apply. Project rows are locked during apply; If-Match and candidate versions must match. Idempotency records share the transaction with writes. Membership rows are checked and locked within the organization transaction so role removal cannot race a committed privileged mutation.
+
+Baselines compare structurally: PostgreSQL JSONB does not retain object field order. Revisions record actor, reason, before/after fields and a full snapshot. Restores become new revisions and retain existing baselines. Imported historical baselines are accepted as supplied; new server captures are canonical. Data is scoped by organization in every query; composite foreign keys prevent cross-organization publication/share links. RLS is not enabled in this phase.
+
+Draft and published schedules are separate. Publishing stores an immutable snapshot; viewer memberships and opaque shared links resolve publications only. Links are hashed, expire, and can be revoked. Shared copies exclude draft audit records but include task notes and baseline dates. This is snapshot collaboration, not live push editing.
+
+Username/password authentication provides a standalone path without external providers. scrypt hashes and hashed random session tokens, secure path-scoped cookies, CSRF/origin checks and per-IP rate limits protect the current adapter. OIDC/recovery/MFA and a full threat-model review remain future work. No credential is shared with Bidlark. The static Sites preview remains browser-only; the CAS-TX reverse proxy handles the API and static app separately.

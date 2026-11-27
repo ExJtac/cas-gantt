@@ -1,0 +1,12 @@
+import {database,migrate} from './db';
+import {createApp} from './app';
+const url=process.env.GANTT_DATABASE_URL;
+if(!url)throw new Error('GANTT_DATABASE_URL is required.');
+const origin=process.env.GANTT_PUBLIC_ORIGIN||'http://127.0.0.1:4317';
+const production=process.env.NODE_ENV==='production';
+if(production&&!origin.startsWith('https://'))throw new Error('Production requires an HTTPS origin.');
+const pool=database(url);await migrate(pool);
+const app=await createApp({pool,origin,secure:production,registration:process.env.GANTT_REGISTRATION!=='disabled'});
+await app.listen({host:'127.0.0.1',port:Number(process.env.GANTT_PORT||4318)});
+console.log(`CAS Gantt API listening on loopback port ${process.env.GANTT_PORT||4318}`);
+for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{await app.close();await pool.end();process.exit(0);});

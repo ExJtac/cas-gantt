@@ -1,0 +1,7 @@
+[Unit]
+Description=Back up CAS Gantt database
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cas-gantt-backup
+UMask=0077

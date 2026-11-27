@@ -1,1 +1,34 @@
-{"name":"cas-gantt","version":"0.1.0","private":true,"type":"module","license":"MIT","scripts":{"dev":"vite --host 127.0.0.1 --port 4317","build":"tsc --noEmit && vite build","test":"tsx --test tests/*.test.ts","preview":"vite preview --host 127.0.0.1 --port 4317"},"dependencies":{"lucide-react":"^0.468.0","react":"^19.2.0","react-dom":"^19.2.0","zod":"^4.6.7"},"devDependencies":{"@types/node":"^22.0.0","@types/react":"^19.2.0","@types/react-dom":"^19.2.0","tsx":"^4.20.0","typescript":"^5.9.0","vite":"^7.2.0"}}
+{
+  "name": "cas-gantt",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4317",
+    "build": "tsc --noEmit && vite build",
+    "test": "tsx --test tests/*.test.ts",
+    "preview": "vite preview --host 127.0.0.1 --port 4317",
+    "dev:server": "tsx watch server/index.ts",
+    "start:server": "tsx server/index.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/rate-limit": "^10.3.0",
+    "fastify": "^5.12.8",
+    "lucide-react": "^0.468.0",
+    "pg": "^8.23.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.2.0"
+  }
+}

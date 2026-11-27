@@ -1,9 +1,11 @@
 # Implementation status
 
-Version 0.1.0 — standalone alpha, November 26, 2026.
+Version 0.2.0 — standalone early release, November 26, 2026.
 
-Implemented: local project/task editor; grid/timeline; calendar dates; workdays and holidays; task holds; five-section demo; four dependency types and lag; validation/cycle detection; move/resize with preview; baselines; session undo/redo; audit labels; resources summary; JSON import/export; CSV export; print; responsive UI.
+Implemented: local project/task editor; grid/timeline; workdays/holidays; task holds; five-section demo; four dependency types/lag; cycle validation; move/resize with preview; date baselines; session undo/redo; resources summary; JSON import/export; CSV export; print; responsive UI.
 
-Verified: TypeScript/production build; automated calendar, dependency, import and baseline invariants; browser edit/apply/persistence and baseline capture. Detailed results are in docs/VERIFICATION.md.
+New in v0.2: PostgreSQL migrations/persistence, username/password sessions, organization memberships and owner/scheduler/editor/viewer authorization, atomic project versions, idempotent writes, field-level revision history/restore preview, explicit published snapshots, expiring/revocable read-only links and one-use invitations. Optional browser workspace remains available and never uploads automatically.
 
-Partial against the original commercial specification: G0 architecture and standalone boundary, G1 local editor (no auth/tenant server), G2 dependency core (no WBS or full constraints), G3 baseline/revision subset. G4 integration and G5 commercial readiness are not complete. Do not represent this release as multi-user SaaS or a completed commercial scheduling system.
+Verification includes real PostgreSQL tests for tenant isolation, permissions, CSRF/origin checks, stale/concurrent writes, baseline preservation, publishing, expiry/revocation, restart persistence and session invalidation; browser checks cover sign-in, save/reload, publishing, revocation, history and conflict recovery. See docs/VERIFICATION.md.
+
+Original specification gates: G0 standalone architecture established; G1 persistence/accounts substantially implemented, with OIDC/recovery and broader operational review pending; G2 dependency core implemented but WBS, actuals, detailed calendars/constraints and CPM incomplete; G3 baseline/revision/publication subset implemented. G4 Bidlark integration and G5 full commercial readiness remain incomplete. This is not the full commercial specification.

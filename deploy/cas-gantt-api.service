@@ -1,0 +1,29 @@
+[Unit]
+Description=CAS Gantt standalone API
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=cas-gantt
+Group=cas-gantt
+WorkingDirectory=/opt/cas-gantt/current
+EnvironmentFile=/etc/cas-gantt/api.env
+ExecStart=/usr/bin/node /opt/cas-gantt/current/node_modules/tsx/dist/cli.mjs server/index.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+UMask=0077
+MemoryMax=384M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target
